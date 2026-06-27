@@ -1,0 +1,6 @@
+{
+  "functions": {
+    "app/api/generate-full/route.ts": { "maxDuration": 60 },
+    "app/api/enhance-prompt/route.ts": { "maxDuration": 30 }
+  }
+}

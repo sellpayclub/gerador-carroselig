@@ -1,0 +1,149 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-background: #09090b;
+  --color-foreground: #fafafa;
+  --color-card: #18181b;
+  --color-card-foreground: #fafafa;
+  --color-muted: #27272a;
+  --color-muted-foreground: #a1a1aa;
+  --color-border: #27272a;
+  --color-input: #27272a;
+  --color-ring: #f5d020;
+  --color-primary: #f5d020;
+  --color-primary-foreground: #09090b;
+  --color-accent: #ec4899;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-bebas: var(--font-bebas), "Bebas Neue", sans-serif;
+  --font-anton: var(--font-anton), "Anton", sans-serif;
+  --font-oswald: var(--font-oswald), "Oswald", sans-serif;
+}
+
+* {
+  border-color: var(--color-border);
+}
+
+html,
+body {
+  background: var(--color-background);
+  color: var(--color-foreground);
+}
+
+::selection {
+  background: var(--color-primary);
+  color: var(--color-primary-foreground);
+}
+
+/* Scrollbar dark */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: #18181b;
+}
+::-webkit-scrollbar-thumb {
+  background: #3f3f46;
+  border-radius: 6px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #52525b;
+}
+
+/* Drag preview helper */
+.drag-over {
+  outline: 2px dashed var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Shimmer skeleton — animação de loading */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(39, 39, 42, 0.6) 0%,
+    rgba(63, 63, 70, 0.9) 50%,
+    rgba(39, 39, 42, 0.6) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.6s infinite linear;
+}
+
+/* Gradiente conic girando — fundo do card em geração */
+@keyframes conicSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.conic-spin {
+  background: conic-gradient(
+    from 0deg,
+    #1e293b 0deg,
+    #6d28d9 90deg,
+    #db2777 180deg,
+    #f59e0b 270deg,
+    #1e293b 360deg
+  );
+  animation: conicSpin 3s linear infinite;
+}
+
+/* Ring pulsante central */
+@keyframes ringPulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.85;
+  }
+  50% {
+    transform: scale(1.12);
+    opacity: 1;
+  }
+}
+.ring-pulse {
+  animation: ringPulse 1.4s ease-in-out infinite;
+}
+
+/* Texto com fade suave */
+@keyframes textFade {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
+}
+.text-fade {
+  animation: textFade 1.6s ease-in-out infinite;
+}
+
+/* Pulse para o spinner de geração */
+@keyframes softpulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.55;
+    transform: scale(0.92);
+  }
+}
+.soft-pulse {
+  animation: softpulse 1.4s infinite ease-in-out;
+}
+
+/* Fade-in para resultados */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.fade-in-up {
+  animation: fadeInUp 0.3s ease-out;
+}
