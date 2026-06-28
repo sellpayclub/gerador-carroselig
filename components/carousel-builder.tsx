@@ -395,6 +395,12 @@ export function CarouselBuilder() {
 
     for (let i = 0; i < cards.length; i++) {
       setProgress({ current: i + 1, total: cards.length });
+      // Marca o card atual como "generating" para disparar a animação
+      setResults((prev) =>
+        prev.map((r) =>
+          r.cardIndex === cards[i].index ? { ...r, status: "generating" } : r,
+        ),
+      );
       const result = await generateOne(cards[i]);
       setResults((prev) =>
         prev.map((r) => (r.cardIndex === result.cardIndex ? result : r)),
