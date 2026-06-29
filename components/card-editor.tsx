@@ -181,10 +181,25 @@ export function CardEditor({
           )}
 
           {isUpload && (
-            <div className="rounded-md border border-zinc-800 bg-zinc-900/40 p-2 text-[11px] text-zinc-400">
-              A IA usa sua foto <strong>como está</strong> e só adiciona o
-              layout do carrossel (gradiente preto + legenda). A imagem não é
-              alterada.
+            <div className="space-y-3">
+              <div className="rounded-md border border-zinc-800 bg-zinc-900/40 p-2 text-[11px] text-zinc-400">
+                A IA usa sua foto <strong>como está</strong> e só adiciona o
+                layout do carrossel (gradiente preto + legenda). A imagem não é
+                alterada.
+              </div>
+              <div>
+                <Label>Observações sobre a imagem (opcional)</Label>
+                <Textarea
+                  value={card.uploadNotes ?? ""}
+                  onChange={(e) => onChange({ uploadNotes: e.target.value })}
+                  placeholder="Ex.: É foto de produto — destaque o nome na legenda. / Pessoa à esquerda, deixe espaço pro texto. / Fundo já é escuro."
+                  rows={2}
+                />
+                <p className="mt-1 text-[11px] text-zinc-500">
+                  Contexto extra enviado no prompt para a IA entender a foto.
+                  Não muda os pixels da imagem.
+                </p>
+              </div>
             </div>
           )}
 

@@ -18,7 +18,9 @@ export interface CardConfig {
   imageSource: "ai" | "upload";
   facePresetId?: string; // só quando imageSource === "ai"
   assignedUploadId?: string; // só quando imageSource === "upload"
-  /** Cena (ai) OU mudanças (upload — vazio = usar imagem original como base). */
+  /** Observações sobre a foto enviada (contexto pro prompt — não altera a imagem). */
+  uploadNotes?: string;
+  /** Cena (modo IA). */
   imagePrompt: string;
   // Texto — a IA decide tipografia + palavra amarelo
   textPrompt: string;

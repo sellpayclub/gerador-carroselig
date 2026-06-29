@@ -20,7 +20,11 @@ interface ResultsGalleryProps {
   onRegenerateImage: (id: string) => void;
   onEditAndRegenerate: (
     id: string,
-    next: { imagePrompt: string; textPrompt: string },
+    next: {
+      imagePrompt: string;
+      textPrompt: string;
+      uploadNotes?: string;
+    },
   ) => void;
   onDelete: (id: string) => void;
   onDownloadAll: () => void;
@@ -40,6 +44,7 @@ export function ResultsGallery({
   const [lightboxId, setLightboxId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editImagePrompt, setEditImagePrompt] = useState("");
+  const [editUploadNotes, setEditUploadNotes] = useState("");
   const [editTextPrompt, setEditTextPrompt] = useState("");
 
   const doneCount = results.filter((r) => r.status === "done").length;
@@ -50,6 +55,7 @@ export function ResultsGallery({
   const startEdit = (r: GeneratedCard) => {
     setEditingId(r.id);
     setEditImagePrompt(r.snapshot?.imagePrompt ?? "");
+    setEditUploadNotes(r.snapshot?.uploadNotes ?? "");
     setEditTextPrompt(r.snapshot?.textPrompt ?? "");
   };
 
@@ -180,15 +186,31 @@ export function ResultsGallery({
                   <div className="space-y-2 p-3">
                     {isEditing ? (
                       <div className="space-y-2">
-                        <div>
-                          <Label>Prompt de imagem</Label>
-                          <Textarea
-                            value={editImagePrompt}
-                            onChange={(e) => setEditImagePrompt(e.target.value)}
-                            rows={2}
-                            placeholder="Descreva a cena / mudanças da imagem"
-                          />
-                        </div>
+                        {r.snapshot?.imageSource === "upload" ? (
+                          <div>
+                            <Label>Observações sobre a imagem</Label>
+                            <Textarea
+                              value={editUploadNotes}
+                              onChange={(e) =>
+                                setEditUploadNotes(e.target.value)
+                              }
+                              rows={2}
+                              placeholder="Contexto extra sobre a foto enviada"
+                            />
+                          </div>
+                        ) : (
+                          <div>
+                            <Label>Prompt de imagem</Label>
+                            <Textarea
+                              value={editImagePrompt}
+                              onChange={(e) =>
+                                setEditImagePrompt(e.target.value)
+                              }
+                              rows={2}
+                              placeholder="Descreva a cena / mudanças da imagem"
+                            />
+                          </div>
+                        )}
                         <div>
                           <Label>Texto da legenda (PT-BR)</Label>
                           <Textarea
@@ -205,6 +227,7 @@ export function ResultsGallery({
                             onClick={() => {
                               onEditAndRegenerate(r.id, {
                                 imagePrompt: editImagePrompt,
+                                uploadNotes: editUploadNotes,
                                 textPrompt: editTextPrompt,
                               });
                               setEditingId(null);

@@ -80,10 +80,21 @@ The headline/caption text provided below in the "HEADLINE / TEXT CONTENT" sectio
  * Prompt exclusivo para upload: a foto já está montada no topo — a IA só edita embaixo.
  */
 export function buildUploadOverlayPrompt(card: CardConfig): string {
-  return [
+  const parts: string[] = [
     `CRITICAL: The user's uploaded photo is already placed in the TOP 40% of this 1024x1536 canvas.`,
     `That top region is LOCKED. Do NOT regenerate, repaint, recrop, reposition, blur, extend, or alter ANY pixel in the top photo area.`,
     `Do NOT create a new scene or new people. The uploaded photo must remain pixel-identical in the top section.`,
+  ];
+
+  if (card.uploadNotes?.trim()) {
+    parts.push(
+      ``,
+      `USER NOTES ABOUT THE UPLOADED IMAGE (context only — use this to understand the photo and tailor the text layout; do NOT change the photo because of these notes):`,
+      card.uploadNotes.trim(),
+    );
+  }
+
+  parts.push(
     ``,
     `EDIT ONLY the BOTTOM 60% (the masked / editable region):`,
     `- Add a smooth black gradient starting around the middle of the canvas, transitioning to solid black at the bottom`,
@@ -100,7 +111,9 @@ export function buildUploadOverlayPrompt(card: CardConfig): string {
     ``,
     `HEADLINE / TEXT CONTENT (in portuguese brazil — reproduce VERBATIM, do not change a single character):`,
     card.textPrompt,
-  ].join("\n");
+  );
+
+  return parts.join("\n");
 }
 
 /** Modo explícito de geração — separa upload (preservar) de IA (criar). */

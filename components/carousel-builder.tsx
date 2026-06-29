@@ -56,6 +56,7 @@ function makeCard(index: number): CardConfig {
     index,
     imageSource: "ai",
     imagePrompt: "",
+    uploadNotes: "",
     textPrompt: "",
   };
 }
@@ -457,7 +458,11 @@ export function CarouselBuilder() {
   const handleEditAndRegenerate = useCallback(
     async (
       id: string,
-      next: { imagePrompt: string; textPrompt: string },
+      next: {
+        imagePrompt: string;
+        textPrompt: string;
+        uploadNotes?: string;
+      },
     ) => {
       const existing = results.find((r) => r.id === id);
       if (!existing?.snapshot) return;
@@ -465,6 +470,7 @@ export function CarouselBuilder() {
         ...existing.snapshot,
         imagePrompt: next.imagePrompt,
         textPrompt: next.textPrompt,
+        uploadNotes: next.uploadNotes ?? existing.snapshot.uploadNotes,
       };
       setResults((prev) =>
         prev.map((r) =>
