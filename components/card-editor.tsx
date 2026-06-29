@@ -140,9 +140,18 @@ export function CardEditor({
               <Label>Imagem atribuída a este card</Label>
               <Select
                 value={card.assignedUploadId ?? ""}
-                onChange={(e) =>
-                  onChange({ assignedUploadId: e.target.value || undefined })
-                }
+                onChange={(e) => {
+                  const id = e.target.value || undefined;
+                  onChange({
+                    assignedUploadId: id,
+                    ...(id
+                      ? {
+                          imageSource: "upload" as const,
+                          facePresetId: undefined,
+                        }
+                      : {}),
+                  });
+                }}
               >
                 <option value="">— selecionar —</option>
                 {uploads.map((u, i) => (

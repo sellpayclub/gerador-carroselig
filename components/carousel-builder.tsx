@@ -14,7 +14,12 @@ import { ImageLibrary } from "./image-library";
 import { FaceLibrary } from "./face-library";
 import { CardEditor } from "./card-editor";
 import { ResultsGallery } from "./results-gallery";
-import { buildFullCarouselPrompt, inferInputFidelity } from "@/lib/prompts";
+import {
+  buildFullCarouselPrompt,
+  buildUploadOverlayPrompt,
+  inferGenerationMode,
+  inferInputFidelity,
+} from "@/lib/prompts";
 import { downloadAllAsZip, downloadSingle } from "@/lib/download-zip";
 import { cardCost, formatBrl, formatUsd, textCost, usdToBrl } from "@/lib/pricing";
 import {
@@ -286,53 +291,76 @@ export function CarouselBuilder() {
       };
 
       try {
-        // Coletar referências
-        let refs: string[] = [];
-        if (card.imageSource === "upload") {
-          const assigned = findUpload(card.assignedUploadId);
-          if (assigned) refs = [assigned.dataUrl];
-        } else if (card.facePresetId) {
-          const preset = findFacePreset(card.facePresetId);
-          if (preset) refs = preset.images.map((img) => img.dataUrl);
-        }
-
         const facePreset =
           card.imageSource === "ai"
             ? findFacePreset(card.facePresetId)
             : undefined;
 
-        // Pré-processamento: enriquecer/traduzir a cena (só modo IA com prompt).
-        let enhancedScene: string | undefined;
-        let enhanceCostUsd = 0;
-        if (card.imageSource === "ai" && card.imagePrompt.trim()) {
-          try {
-            const enhRes = await fetch("/api/enhance-prompt", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                scene: card.imagePrompt,
-                withFace: !!facePreset,
-              }),
-            });
-            if (enhRes.ok) {
-              const enhData = (await enhRes.json()) as {
-                enhanced: string;
-                model: string;
-                usage?: { prompt_tokens: number; completion_tokens: number };
-              };
-              enhancedScene = enhData.enhanced;
-              enhanceCostUsd = textCost(enhData.model, enhData.usage) ?? 0;
-            }
-          } catch {
-            // fallback silencioso: usa o prompt original
-          }
-        }
+        const generationMode = inferGenerationMode(card, facePreset);
 
-        const fullPrompt = buildFullCarouselPrompt(
-          card,
-          facePreset,
-          enhancedScene,
-        );
+        // Coletar referências conforme o modo
+        let refs: string[] = [];
+        let fullPrompt: string;
+        let enhanceCostUsd = 0;
+
+        if (generationMode === "upload-as-is") {
+          if (!card.assignedUploadId) {
+            throw new Error(
+              `Card ${card.index + 1}: selecione uma imagem (modo "Usar minha imagem").`,
+            );
+          }
+          const assigned = findUpload(card.assignedUploadId);
+          if (!assigned) {
+            throw new Error(
+              `Card ${card.index + 1}: imagem não encontrada. Faça upload novamente.`,
+            );
+          }
+          refs = [assigned.dataUrl];
+          fullPrompt = buildUploadOverlayPrompt(card);
+        } else {
+          if (card.imageSource === "upload") {
+            throw new Error(
+              `Card ${card.index + 1}: modo upload sem imagem atribuída.`,
+            );
+          }
+
+          if (card.facePresetId) {
+            const preset = findFacePreset(card.facePresetId);
+            if (preset) refs = preset.images.map((img) => img.dataUrl);
+          }
+
+          // Pré-processamento: enriquecer/traduzir a cena (só modo IA com prompt).
+          let enhancedScene: string | undefined;
+          if (card.imagePrompt.trim()) {
+            try {
+              const enhRes = await fetch("/api/enhance-prompt", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  scene: card.imagePrompt,
+                  withFace: generationMode === "ai-face",
+                }),
+              });
+              if (enhRes.ok) {
+                const enhData = (await enhRes.json()) as {
+                  enhanced: string;
+                  model: string;
+                  usage?: { prompt_tokens: number; completion_tokens: number };
+                };
+                enhancedScene = enhData.enhanced;
+                enhanceCostUsd = textCost(enhData.model, enhData.usage) ?? 0;
+              }
+            } catch {
+              // fallback silencioso
+            }
+          }
+
+          fullPrompt = buildFullCarouselPrompt(
+            card,
+            facePreset,
+            enhancedScene,
+          );
+        }
 
         const res = await fetch("/api/generate-full", {
           method: "POST",
@@ -342,6 +370,7 @@ export function CarouselBuilder() {
             referenceImagesBase64: refs,
             cardIndex: card.index,
             inputFidelity: inferInputFidelity(card),
+            generationMode,
           }),
         });
 

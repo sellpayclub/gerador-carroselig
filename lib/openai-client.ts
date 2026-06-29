@@ -50,3 +50,12 @@ export async function dataUrlsToOpenAIFiles(dataUrls: string[]) {
   );
   return files;
 }
+
+/** Converte um Buffer PNG/JPEG em File-like para a SDK. */
+export async function bufferToOpenAIFile(
+  buffer: Buffer,
+  filename: string,
+  mimeType = "image/png",
+) {
+  return await OpenAI.toFile(buffer, filename, { type: mimeType });
+}

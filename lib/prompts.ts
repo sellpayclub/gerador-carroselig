@@ -77,7 +77,45 @@ export const VERBATIM_TEXT_RULES = `CRITICAL TEXT RULE:
 The headline/caption text provided below in the "HEADLINE / TEXT CONTENT" section MUST be reproduced EXACTLY as written — character for character, word for word, in the same order, with the same punctuation and capitalization. Do NOT modify, paraphrase, reword, translate, shorten, expand, reorder, or "improve" the text in any way. Render it verbatim. The ONLY freedom you have is choosing which single word becomes yellow and the typography (font/size/layout). The words themselves are immutable.`;
 
 /**
- * Monta o prompt master enviado à OpenAI para gerar o carrossel completo.
+ * Prompt exclusivo para upload: a foto já está montada no topo — a IA só edita embaixo.
+ */
+export function buildUploadOverlayPrompt(card: CardConfig): string {
+  return [
+    `CRITICAL: The user's uploaded photo is already placed in the TOP 40% of this 1024x1536 canvas.`,
+    `That top region is LOCKED. Do NOT regenerate, repaint, recrop, reposition, blur, extend, or alter ANY pixel in the top photo area.`,
+    `Do NOT create a new scene or new people. The uploaded photo must remain pixel-identical in the top section.`,
+    ``,
+    `EDIT ONLY the BOTTOM 60% (the masked / editable region):`,
+    `- Add a smooth black gradient starting around the middle of the canvas, transitioning to solid black at the bottom`,
+    `- Render the headline text below the photo area`,
+    `- Typography: Bebas Neue, Anton, or Oswald ExtraBold (condensed)`,
+    `- Giant white headline, ONE highest-impact word in YELLOW (#FFD700), rest white`,
+    `- Text centered, ~80% width, minimum 120px from all edges`,
+    `- Plenty of black negative space`,
+    `- Final format 4:5 (1080x1350 equivalent), Instagram carousel cover`,
+    ``,
+    AUTO_TYPOGRAPHY_RULES,
+    ``,
+    VERBATIM_TEXT_RULES,
+    ``,
+    `HEADLINE / TEXT CONTENT (in portuguese brazil — reproduce VERBATIM, do not change a single character):`,
+    card.textPrompt,
+  ].join("\n");
+}
+
+/** Modo explícito de geração — separa upload (preservar) de IA (criar). */
+export function inferGenerationMode(
+  card: CardConfig,
+  facePreset?: FacePreset,
+): "upload-as-is" | "ai-face" | "ai-generate" {
+  if (card.imageSource === "upload") return "upload-as-is";
+  if (facePreset && facePreset.images.length > 0) return "ai-face";
+  return "ai-generate";
+}
+
+/**
+ * Monta o prompt master enviado à OpenAI para gerar o carrossel completo (modos IA).
+ * Para upload use buildUploadOverlayPrompt().
  */
 export function buildFullCarouselPrompt(
   card: CardConfig,
@@ -89,18 +127,8 @@ export function buildFullCarouselPrompt(
   // Cena já pré-processada (inglês, rica) com fallback para o texto cru.
   const scene = (enhancedScene && enhancedScene.trim()) || card.imagePrompt;
 
-  // ---- Cabeçalho conforme a fonte da imagem ----
-  if (card.imageSource === "upload") {
-    // Upload sempre "as-is": preservar a foto, só adicionar layout do carrossel.
-    parts.push(
-      `Regarding the attached reference image:`,
-      FACE_PRESERVATION_RULES,
-      ``,
-      UPLOAD_IDENTITY_RULES,
-      ``,
-      `USE THE ATTACHED IMAGE AS-IS as the base. Do NOT change the image content, scene, or subject. Only ADD the Instagram carousel layout on top of it: black gradient rising from the bottom and the headline text in the bottom 60%. Keep the original photo fully visible in the top 40%, centered, inside the safe area.`,
-    );
-  } else if (facePreset && facePreset.images.length > 0) {
+  // ---- Cabeçalho conforme a fonte da imagem (somente modos IA) ----
+  if (facePreset && facePreset.images.length > 0) {
     // Rosto da biblioteca: gerar imagem NOVA usando as fotos só como referência de rosto
     parts.push(
       `CRITICAL INSTRUCTION ABOUT THE ATTACHED REFERENCE PHOTOS:`,

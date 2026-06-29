@@ -59,6 +59,13 @@ export interface GenerateFullRequest {
   cardIndex: number;
   /** input_fidelity do images.edit: "high" preserva, "low" permite gerar novo. */
   inputFidelity?: "high" | "low";
+  /**
+   * Modo explícito — evita confundir upload (preservar foto) com IA (gerar novo).
+   * - upload-as-is: usa foto exata + máscara (só legenda embaixo)
+   * - ai-face: gera cena nova com rosto de referência
+   * - ai-generate: gera do zero
+   */
+  generationMode?: "upload-as-is" | "ai-face" | "ai-generate";
 }
 
 export interface GenerateFullResponse {
