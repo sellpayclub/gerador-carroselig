@@ -121,7 +121,9 @@ export function inferGenerationMode(
   card: CardConfig,
   facePreset?: FacePreset,
 ): "upload-as-is" | "ai-face" | "ai-generate" {
-  if (card.imageSource === "upload") return "upload-as-is";
+  if (card.imageSource === "upload" && card.assignedUploadId) {
+    return "upload-as-is";
+  }
   if (facePreset && facePreset.images.length > 0) return "ai-face";
   return "ai-generate";
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, Sparkles, ImageIcon, User, Wand2 } from "lucide-react";
+import { ChevronDown, ImageIcon, User, Wand2 } from "lucide-react";
 import { useState } from "react";
 import { Badge, Button, Label, Select, Textarea } from "./ui";
 import type { CardConfig, FacePreset, UploadedImage } from "@/lib/types";
@@ -22,18 +22,22 @@ export function CardEditor({
   onRemove,
   defaultOpen = false,
 }: CardEditorProps) {
-  const [open, setOpen] = useState(defaultOpen || card.index === 0);
-  const isUpload = card.imageSource === "upload";
+  const [open, setOpen] = useState(
+    defaultOpen || card.index === 0 || !!card.assignedUploadId,
+  );
   const hasAssignedUpload = !!card.assignedUploadId;
+  const assignedImage = uploads.find((u) => u.id === card.assignedUploadId);
+  const isUpload = card.imageSource === "upload" && hasAssignedUpload;
+  const isAi = !isUpload;
   const hasFace = !!card.facePresetId;
 
   const subtitle = isUpload
-    ? hasAssignedUpload
-      ? "imagem enviada como está"
-      : "imagem enviada (não atribuída)"
+    ? assignedImage
+      ? `sua foto: ${assignedImage.name}`
+      : "imagem enviada"
     : hasFace
       ? "gerada pela IA com rosto da biblioteca"
-      : "gerada pela IA (aleatória)";
+      : "gerada pela IA";
 
   return (
     <div className="rounded-xl border border-zinc-800 bg-card">
@@ -46,15 +50,23 @@ export function CardEditor({
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
             {card.index + 1}
           </div>
+          {assignedImage && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={assignedImage.dataUrl}
+              alt=""
+              className="h-10 w-8 rounded object-cover border border-zinc-700"
+            />
+          )}
           <div>
             <div className="text-sm font-medium text-zinc-100">
               Card {card.index + 1}
-              {hasAssignedUpload && (
+              {isUpload && (
                 <span className="ml-2 text-[11px] text-emerald-400">
-                  · imagem atribuída
+                  · sua imagem
                 </span>
               )}
-              {hasFace && (
+              {isAi && hasFace && (
                 <span className="ml-2 text-[11px] text-fuchsia-400">
                   · com rosto
                 </span>
@@ -79,143 +91,121 @@ export function CardEditor({
 
       {open && (
         <div className="space-y-4 border-t border-zinc-800 px-4 py-4">
-          {/* Fonte da imagem */}
+          {/* ---- Imagem: sua foto OU gerar com IA ---- */}
           <div>
-            <Label>Fonte da imagem</Label>
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                size="sm"
-                variant={!isUpload ? "primary" : "outline"}
-                className="flex-1"
-                onClick={() =>
-                  onChange({ imageSource: "ai", assignedUploadId: undefined })
-                }
-              >
-                <Sparkles size={14} /> Gerar via IA
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant={isUpload ? "primary" : "outline"}
-                className="flex-1"
-                onClick={() =>
-                  onChange({ imageSource: "upload", facePresetId: undefined })
-                }
-                disabled={uploads.length === 0}
-              >
-                <ImageIcon size={14} /> Usar minha imagem ({uploads.length})
-              </Button>
-            </div>
+            <Label>Imagem deste card</Label>
+            {uploads.length > 0 ? (
+              <>
+                <Select
+                  value={card.assignedUploadId ?? ""}
+                  onChange={(e) => {
+                    const id = e.target.value || undefined;
+                    if (id) {
+                      onChange({
+                        assignedUploadId: id,
+                        imageSource: "upload",
+                        facePresetId: undefined,
+                      });
+                    } else {
+                      onChange({
+                        assignedUploadId: undefined,
+                        imageSource: "ai",
+                      });
+                    }
+                  }}
+                >
+                  <option value="">✨ Gerar imagem com IA</option>
+                  {uploads.map((u, i) => (
+                    <option key={u.id} value={u.id}>
+                      🖼 Usar minha foto #{i + 1} — {u.name}
+                    </option>
+                  ))}
+                </Select>
+                <p className="mt-1 text-[11px] text-zinc-500">
+                  Escolha uma foto que você enviou, ou deixe em &quot;Gerar com
+                  IA&quot; para a IA criar a imagem.
+                </p>
+              </>
+            ) : (
+              <div className="rounded-md border border-dashed border-zinc-700 px-3 py-2 text-[11px] text-zinc-500">
+                Nenhuma foto enviada ainda — suba imagens na biblioteca acima,
+                ou a IA gera tudo sozinha.
+              </div>
+            )}
           </div>
 
-          {/* Rosto (só IA) */}
-          {!isUpload && (
-            <div>
-              <Label>Rosto da biblioteca (opcional)</Label>
-              <Select
-                value={card.facePresetId ?? ""}
-                onChange={(e) =>
-                  onChange({ facePresetId: e.target.value || undefined })
-                }
-              >
-                <option value="">Nenhum — imagem aleatória</option>
-                {facePresets.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name} ({p.images.length} fotos)
-                  </option>
-                ))}
-              </Select>
-              {facePresets.length === 0 && (
-                <p className="mt-1 text-[11px] text-zinc-500">
-                  Suba rostos na Biblioteca acima para usar aqui.
-                </p>
-              )}
-            </div>
-          )}
-
-          {/* Imagem atribuída (só upload) */}
+          {/* ---- Modo UPLOAD: observações + aviso ---- */}
           {isUpload && (
-            <div>
-              <Label>Imagem atribuída a este card</Label>
-              <Select
-                value={card.assignedUploadId ?? ""}
-                onChange={(e) => {
-                  const id = e.target.value || undefined;
-                  onChange({
-                    assignedUploadId: id,
-                    ...(id
-                      ? {
-                          imageSource: "upload" as const,
-                          facePresetId: undefined,
-                        }
-                      : {}),
-                  });
-                }}
-              >
-                <option value="">— selecionar —</option>
-                {uploads.map((u, i) => (
-                  <option key={u.id} value={u.id}>
-                    #{i + 1} — {u.name}
-                  </option>
-                ))}
-              </Select>
-            </div>
-          )}
-
-          {/* Prompt de imagem (só no modo IA) */}
-          {!isUpload && (
-            <div>
-              <Label>
-                {hasFace
-                  ? "Cena onde a pessoa aparece"
-                  : "Prompt da imagem (descreva a cena)"}
-              </Label>
-              <Textarea
-                value={card.imagePrompt}
-                onChange={(e) => onChange({ imagePrompt: e.target.value })}
-                placeholder="Ex.: Show her working at the computer with LOTS of money coming out of it — as if she were printing money — and make her look happy and excited."
-                rows={3}
-              />
-            </div>
-          )}
-
-          {isUpload && (
-            <div className="space-y-3">
-              <div className="rounded-md border border-zinc-800 bg-zinc-900/40 p-2 text-[11px] text-zinc-400">
-                A IA usa sua foto <strong>como está</strong> e só adiciona o
-                layout do carrossel (gradiente preto + legenda). A imagem não é
-                alterada.
-              </div>
+            <div className="space-y-3 rounded-lg border border-emerald-900/40 bg-emerald-950/20 p-3">
+              <p className="text-[11px] text-emerald-300/90">
+                <ImageIcon size={12} className="mr-1 inline" />
+                Sua foto será usada <strong>exatamente como está</strong>. A IA
+                só adiciona o gradiente preto e a legenda embaixo.
+              </p>
               <div>
-                <Label>Observações sobre a imagem (opcional)</Label>
+                <Label>Observações sobre a foto (opcional)</Label>
                 <Textarea
                   value={card.uploadNotes ?? ""}
                   onChange={(e) => onChange({ uploadNotes: e.target.value })}
-                  placeholder="Ex.: É foto de produto — destaque o nome na legenda. / Pessoa à esquerda, deixe espaço pro texto. / Fundo já é escuro."
+                  placeholder="Ex.: É foto de produto — destaque o nome. / Pessoa à esquerda. / Fundo já é escuro."
                   rows={2}
                 />
                 <p className="mt-1 text-[11px] text-zinc-500">
-                  Contexto extra enviado no prompt para a IA entender a foto.
-                  Não muda os pixels da imagem.
+                  Ajuda a IA a entender sua foto ao montar a legenda. Não altera
+                  a imagem.
                 </p>
               </div>
             </div>
           )}
 
-          {/* Prompt de texto */}
+          {/* ---- Modo IA: rosto + prompt de cena ---- */}
+          {isAi && (
+            <>
+              <div>
+                <Label>Rosto da biblioteca (opcional)</Label>
+                <Select
+                  value={card.facePresetId ?? ""}
+                  onChange={(e) =>
+                    onChange({ facePresetId: e.target.value || undefined })
+                  }
+                >
+                  <option value="">Nenhum — cena sem rosto específico</option>
+                  {facePresets.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name} ({p.images.length} fotos)
+                    </option>
+                  ))}
+                </Select>
+              </div>
+              <div>
+                <Label>
+                  {hasFace
+                    ? "Cena onde a pessoa aparece"
+                    : "Descreva a imagem que a IA deve criar"}
+                </Label>
+                <Textarea
+                  value={card.imagePrompt}
+                  onChange={(e) => onChange({ imagePrompt: e.target.value })}
+                  placeholder="Ex.: mulher no notebook com dinheiro saindo da tela, feliz e animada"
+                  rows={3}
+                />
+              </div>
+            </>
+          )}
+
+          {/* ---- Legenda (sempre) ---- */}
           <div>
             <Label>Texto da legenda (português BR)</Label>
             <Textarea
               value={card.textPrompt}
               onChange={(e) => onChange({ textPrompt: e.target.value })}
-              placeholder="Ex.: O segredo para ganhar 10K por mês no digital — 3 passos que ninguém te conta."
+              placeholder="Ex.: O SEGREDO PARA GANHAR 10K POR MÊS NO DIGITAL"
               rows={3}
             />
             <p className="mt-1 flex items-center gap-1 text-[11px] text-zinc-500">
               <Wand2 size={11} />
-              A IA escolhe sozinha a tipografia (Bebas/Anton/Oswald) e qual
-              palavra fica em amarelo.
+              Texto exato que aparece na imagem. A IA escolhe tipografia e qual
+              palavra fica amarela.
             </p>
           </div>
 
@@ -223,10 +213,10 @@ export function CardEditor({
             <p className="flex items-center gap-1 text-[11px] text-zinc-500">
               <User size={11} />
               {isUpload
-                ? "Sua imagem é enviada à IA como está (preserva a foto)."
+                ? "Foto preservada + legenda gerada pela IA."
                 : hasFace
-                  ? "As fotos do rosto são enviadas à IA para gerar a pessoa na cena."
-                  : "A IA gera uma imagem aleatória baseada no prompt."}
+                  ? "IA gera cena nova com o rosto da biblioteca."
+                  : "IA gera imagem e legenda do zero."}
             </p>
             <Button
               type="button"

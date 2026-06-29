@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  Image as ImageIcon,
   Layers,
   Link2,
   Plus,
@@ -64,16 +63,6 @@ function makeCard(index: number): CardConfig {
 function makeInitialCards(n: number): CardConfig[] {
   return Array.from({ length: n }, (_, i) => makeCard(i));
 }
-
-const DEFAULT_IMAGE_PROMPT =
-  "Show her working at the computer with LOTS of money coming out of it — as if she were printing money — and make her look happy and excited.";
-
-const DEFAULT_TEXT_PROMPTS = [
-  "O SEGREDO PARA GANHAR 10K POR MÊS NO DIGITAL",
-  "3 PASSOS QUE NINGUÉM TE CONTA SOBRE VENDER ONLINE",
-  "O ERRO QUE TE IMPEDE DE FATURAR 5K POR SEMANA",
-  "COMO SAIR DO CLT E VIVER DE RENDA PASSIVA EM 90 DIAS",
-];
 
 export function CarouselBuilder() {
   const [numCards, setNumCards] = useState(4);
@@ -518,18 +507,6 @@ export function CarouselBuilder() {
     [results],
   );
 
-  const fillExample = useCallback(() => {
-    setCards((prev) =>
-      prev.map((c, i) => ({
-        ...c,
-        imagePrompt: c.imagePrompt || DEFAULT_IMAGE_PROMPT,
-        textPrompt:
-          c.textPrompt ||
-          DEFAULT_TEXT_PROMPTS[i % DEFAULT_TEXT_PROMPTS.length],
-      })),
-    );
-  }, []);
-
   const readyToGenerate = useMemo(
     () => cards.length > 0 && !isGenerating,
     [cards.length, isGenerating],
@@ -642,22 +619,14 @@ export function CarouselBuilder() {
               </div>
             </div>
 
-            <div className="mt-5 flex flex-wrap gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={fillExample}
-              >
-                <ImageIcon size={14} /> Preencher exemplo
-              </Button>
+            <div className="mt-5">
               <Button
                 type="button"
                 variant="primary"
                 size="md"
                 onClick={handleGenerateAll}
                 disabled={!readyToGenerate}
-                className="flex-1"
+                className="w-full"
               >
                 <Sparkles size={16} />
                 {isGenerating
